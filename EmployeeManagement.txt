@@ -1,0 +1,177 @@
+Create API -> give API name(GetEmployeeDetailsByEmail) and descri
+ption
+
+Create data source for API -> Actions - Create Resource -> give 
+name(getcustomerdetailsbyemail) - tick Enable API Gateway CORS
+(Cross-Origin Resource sharing)(CORS=>if our API is in one domain
+ say abc.com and we are trying to access the API from say def.com
+ so, if we want to connect our API from def.com to abc.com which 
+is where our API is then we need to enable CORS Since we connect 
+our API from S3 bucket which is a different domain and our API is
+ in different domain, hence we need CORS.)
+
+Next we create a method i.e., the verb method which will be 
+created under the resource. Under options there are different 
+HPPT verbs under options i.e., ANY, GET, PUT, POST, PATCH, DELETE,
+HEAD. Select GET.
+
+Integration type - How we want to integrate our API - For now 
+select Mock and save (Note - API doesn't have business logic on 
+its own but only does things like security, authentication, 
+checking reality of data but for it to have some kind of 
+business logic we have to connect it to some kind of integration
+like lambda to HTTP to expose any web services in any other 
+servers and we can call that HTTP from here or a mock data 
+or some other AWS service)
+
+To return a mock response for now - select the method - actions -
+ click on integration response - click on arrow under HTTP status
+ regex - Body mapping templates - content type would already be 
+defined - select application\json - can select any one of the 
+generate template but we will return a custom template i.e., 
+a sample json => {"FirstName" : "Aishwarya", 
+"LastName" : "Shekar", "Email" : "aishushekar6@gmail.com"} - 
+save everything
+
+Next thing to do is deploy the API coz to test the API we need 
+the API URL and to get that URL we need to deploy the API. Note 
+that after any changes made, it is necessary to deploy the API. 
+To deploy the API - Actions - Deploy API - Give any deployment 
+stage(eg. development stage or UAT stage) -> Create a new stage
+(name: dev) - deploy - you would now get a URL which is the 
+invocation URL to access our API. That URL is the root URL 
+and root URL will not get us anything. Along with the root 
+URL we have append the method specificity as well i.e., we 
+have to get the HTTP method that we created ie., 
+root_URL_that_we_got/getcustomerdetailsbyemail now if you paste 
+this URL in postman we get the JSON that we wrote
+
+Create a lambda function to attach business logic with API - 
+Create function - Author from scratch - 
+name : getEmployeeDetailsByEmail, 
+role : getEmployeeDetails(create a new role - IAM - create role -
+ AWS services - lambda - Permissions:LambdaFullAccess and 
+DynamoDBReadOnlyAccess(since we are doing only get method so 
+only read permissions is enough) - Name:getCustomerDetails - 
+Create role) - Create function
+
+In the lambda function we return the mock JSON that we created 
+and connect our API gateway to lambda function and we will test 
+our API and our API will return response from lambda function 
+and not the mock response we created
+
+In the lambda function instead of 'Hello from lambda' write 
+'{"FirstName" : "Aishwarya", "LastName" : "Shekar", 
+"Email" : "aishushekar6@gmail.com", "Phone" : "991002820940"}' - 
+Save and test
+
+Connecting lambda function from our API gateway - 
+(To connect one AWS service to another we need ARN
+(Amazon resource number) Hence copy ARN number for lambda which
+ is at the top of the page)
+
+Now go to API gateway to connect with lambda and remove the 
+mock response
+
+Go to API gateway - resource - GET - Integration response - 
+expand - Body - application/json - delete everything - method - 
+integration request - change to lambda function and update 
+region and name - save - deploy API
+
+Now you'll see updated response ie., from lambda => integration 
+between API gateway and lambda is working fine
+
+Next step is to connect dynamoDB to get data from dynamoDB and 
+not mock from lambda
+
+Create a dynamoDB table - Create Table - name:CustomerDeatils - 
+PrimaryKey(ParitionKey):EmailID-String - Create
+
+Now we'll only test GET API by entering a sample data into table 
+and once the POST API is available we'll be able to send data from front end to dynamoDB
+
+Go to table - Items - Create Item - Add partitionKey:Email - click on + beside it and then Insert and String - FiestName...
+
+Next we'll write some code in lambda function(node.js) to connect to DynamoDB
+
+If coding outside of AWS eg. VSCode then we need to import the SDK packages throught NPM but AWS services atackes care of NPM package intsallations and importing(NPM is a package manager for node.js with thousands of packages)
+////const AWS = require("aws-sdk");
+Next create document client
+////var docClient - new AWS.DynamoDB.DocumentClient();
+Define which table name to connect to
+////var tableName = "CustomerDetails";
+we will receive name and email ID as paramters and we need to pass it to dynamoDB. so defining parameters
+////exports.handler = (event, context, callback) => {var params - {TableName : tableName, key :{"EmailId" : event.EmailID} }  docClient.get(params,function(err, data){callback(err, data)})}
+test it from API gateway but before that we need to do some settings
+
+API gateway - Function - GET  - Method Request - URL Query String
+ parameter - Add - name:EmailID, required:yes - REquest Validator
+ : validate query string parameters and headers
+
+To make sure that only appropriate info is sent through query 
+string and not unnecessary one eg. if query string is email ID 
+then user need to enter emailID only
+
+Intergration request - Body Mapping - check :When there are no 
+templates defined - application JSON - generate template -  
+{"EmailID" : "$input.params("EmailID")"} - deploy API - in 
+postman enter params
+
+We'll create a front end page - search box to search email ID
+(key) which will populate name
+
+We'll upload our files to S3 bucket with public permission
+
+S3 - create bucket - name:customerDetails(must be unique globally)
+ - create
+
+inside bucket - properties - static website hosting - use this 
+bucket to host a website - index.html for both doc and erro doc -
+ save
+
+upload index.html and js files
+
+go to bucket - permissions - Bucket policy - policy generator - 
+add policy - add - effect allow - principal - * - action - 
+getObject - ARN - generate - copy the code and paste in policy 
+and save
+
+go to bucket - properties - static website hosting - copy URL 
+and paste in browser
+
+Now the site has been hosted - to rename the URL use Route 53
+
+Search the already existing email ID from DynamoDB and 
+it should work
+
+Add a few more records in DynamoDB and it should work
+
+
+
+
+API Gateway - New API(new API to POST data) - name: PostCustomerDetails - Create
+Create resource - name:postCustomerDetails - Enable CORS - create
+Actions - Create method - POST - Apply
+Integration type - Mock - create
+Integration response - expand sample json response - body mapping - application/json - {"StatusCode" : "200"} - save - save
+Test API
+Deploy API - name:dev
+Test from postman
+Create lambda function - Author from scratch - name:saveCustomerDetails role:postCustomerDetails(lambda role, write to S3, lambda full access)
+///const AWS = require("aws-sdk");
+///var docClient - new AWS.DynamoDB.DocumentClient();
+///exports.handler = (event, context, callback) => {var tableName = "CustomerDetails"; var params - {TableName : tableName, Item :{"EmailId" : event.EmailID, "FirstName" : event.FirstName, "LastName" : event.LastName} }  docClient.put(params,function(err, data)if(err){callback(err)}else{callback(null,"Successfully updated data")}
+API - update remove mock and add lambda function
+Deploy API
+Add files to S3 bucket
+Enable static website hosting to the bucket
+
+
+
+
+
+
+
+
+
+

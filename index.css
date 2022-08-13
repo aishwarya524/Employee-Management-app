@@ -1,0 +1,59 @@
+.jumbotron{
+    text-align: center;
+}
+
+body{
+    background-color: rgb(39, 39, 136) !important;
+}
+
+.row{
+    margin: 3% auto;
+}
+
+.labels{
+    display: inline-block;
+    width: 110px;
+    text-align: center;
+    background-color: black;
+    color: white;
+    padding: 0.5%;
+    border-radius: 8%;   
+}
+
+.display-data{
+    padding: 1%;
+    margin: 2% 0% 0% 1%;
+    background-color: white;
+    text-align: center;
+    display: inline-block;
+    min-width: 210px;
+}
+
+.label-container{
+    margin: 0% 0% 1% 0%;
+}
+
+.search{
+    margin: 2% 2% 0% 2%;
+}
+
+.search-label{
+    background-color: rgb(84, 84, 230);
+    margin: 3%;
+    padding: 1%;
+}
+
+.input-btn{
+    margin: 5% ;
+    border: 2px solid blue;
+    padding: 1%;
+    border-radius: 5px;
+}
+
+.get-btn{
+    margin: 2% 2% 5% 20%;
+}
+
+.container{
+    text-align: center;
+}
